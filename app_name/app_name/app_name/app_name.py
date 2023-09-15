@@ -9,9 +9,10 @@ from pynecone.base import Base
 
 # from app_name.sssecret import secret_gpt_key
 
+import os
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
-openai.api_key = "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"
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 pre_user_messages = []
 pre_gpt_messages = []
@@ -59,7 +60,7 @@ class Message(Base):
     original_text: str
     text: str
     created_at: str
-    to_lang: str
+    # to_lang: str
 
 
 class State(pc.State):
@@ -134,7 +135,7 @@ def message(message):
             down_arrow(),
             text_box(message.text),
             pc.box(
-                pc.text(message.to_lang),
+                # pc.text(message.to_lang),
                 pc.text(" · ", margin_x="0.3rem"),
                 pc.text(message.created_at),
                 display="flex",

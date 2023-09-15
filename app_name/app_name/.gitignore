@@ -1,4 +1,4 @@
-
+.env
 pynecone.db
 .web
 __pycache__/
