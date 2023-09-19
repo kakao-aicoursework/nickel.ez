@@ -9,12 +9,59 @@ from pynecone.base import Base
 
 # from app_name.sssecret import secret_gpt_key
 
+from langchain import LLMChain
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.schema import SystemMessage
+
+from langchain.utilities import DuckDuckGoSearchAPIWrapper
+import tiktoken
+
+import os
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
-openai.api_key = "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"
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 pre_user_messages = []
 pre_gpt_messages = []
+
+
+def load_data(path: str) -> str:
+    """Load data from the file."""
+    with open(path, "r") as f:
+        return f.read()
+
+# print(load_data("./datas/project_data.txt"))
+
+project_data = load_data("./datas/project_data.txt")
+
+class ChatBot:
+    chain = None
+    def __init__(self, llm):
+        self.llm = llm
+        self.document = project_data
+
+    def get_chain(self) -> str:
+
+        system_message = f"assistant는 다음 가이드를 토대로 user의 질문에 적절히 질의응답한다. \n {self.document}"
+        system_message_prompt = SystemMessage(content=system_message)
+
+        human_template = "질문: {question}"
+        human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+
+        chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+
+        chain = LLMChain(llm=self.llm, prompt=chat_prompt)
+
+        self.chain = chain
+
+        return chain
+
+
+cb = ChatBot(ChatOpenAI(temperature=0.0, max_tokens=1024, model="gpt-3.5-turbo-16k"))
 
 
 def answer_question_using_chatgpt(question) -> str:
@@ -25,14 +72,14 @@ def answer_question_using_chatgpt(question) -> str:
         print("build")
         for idx in  range(len(questions)):
             # 이런 식으로 assistant에 하나씩 집어넣는 게 맞나?
-            fmsgs.append({"role": "assistant", "content": questions[idx]})
+            fmsgs.append({"role": "user", "content": questions[idx]})
             fmsgs.append({"role": "assistant", "content": answers[idx]})
 
         return fmsgs
 
 
     # system instruction 만들고
-    system_instruction = f"assistant는 user와 gpt의 이전 대화 내역이 주어진다. assistant는 user의 질문에 대한 답변을 출력한다."
+    system_instruction = f"assistant는 user와 assistant의 이전 대화 기록을 토대로 user의 말에 대답한다."
 
     # messages를만들고
     fewshot_messages = build_fewshot(questions=pre_user_messages, answers=pre_gpt_messages)
@@ -59,7 +106,7 @@ class Message(Base):
     original_text: str
     text: str
     created_at: str
-    to_lang: str
+    # to_lang: str
 
 
 class State(pc.State):
@@ -76,10 +123,9 @@ class State(pc.State):
     def output(self) -> str:
         if not self.text.strip():
             return "result"
-        # translated = translate_text_using_chatgpt(
-        #     self.text, src_lang=self.src_lang, trg_lang=self.trg_lang)
+
         translated = answer_question_using_chatgpt(self.text)
-        # self.messages +=
+
         self.last_answer = translated
         return translated
 
@@ -87,7 +133,8 @@ class State(pc.State):
         self.messages = [
             Message(
                 original_text=self.text,
-                text=self.output,
+                #text=self.output,
+                text = cb.get_chain().run(self.text),
                 created_at=datetime.now().strftime("%B %d, %Y %I:%M %p"),
                 # to_lang=self.trg_lang,
             )
@@ -134,7 +181,7 @@ def message(message):
             down_arrow(),
             text_box(message.text),
             pc.box(
-                pc.text(message.to_lang),
+                # pc.text(message.to_lang),
                 pc.text(" · ", margin_x="0.3rem"),
                 pc.text(message.created_at),
                 display="flex",
@@ -187,21 +234,7 @@ def index():
     return pc.container(
         header(),
 
-        # pc.select(
-        #     list(parallel_example.keys()),
-        #     value=State.src_lang,
-        #     placeholder="Select a language",
-        #     on_change=State.set_src_lang,
-        #     margin_top="1rem",
-        # ),
-        # pc.select(
-        #     list(parallel_example.keys()),
-        #     value=State.trg_lang,
-        #     placeholder="Select a language",
-        #     on_change=State.set_trg_lang,
-        #     margin_top="1rem",
-        # ),
-        # output(),
+
         pc.hstack(
             pc.input(
                 placeholder="Text to translate",
@@ -211,13 +244,6 @@ def index():
             ),
             pc.button("Send", on_click=State.post, margin_top="1rem"),
         ),
-        # pc.input(
-        #     placeholder="Text to translate",
-        #     on_blur=State.set_text,
-        #     margin_top="1rem",
-        #     border_color="#eaeaef"
-        # ),
-        # pc.button("Post", on_click=State.post, margin_top="1rem"),
         pc.vstack(
             pc.foreach(State.messages, message),
             margin_top="2rem",
