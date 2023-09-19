@@ -18,6 +18,13 @@ pre_user_messages = []
 pre_gpt_messages = []
 
 
+def load_data(path: str) -> str:
+    """Load data from the file."""
+    with open(path, "r") as f:
+        return f.read()
+
+# print(load_data("./datas/project_data.txt"))
+
 def answer_question_using_chatgpt(question) -> str:
 #fewshow?
     print("making answer")
@@ -26,14 +33,14 @@ def answer_question_using_chatgpt(question) -> str:
         print("build")
         for idx in  range(len(questions)):
             # 이런 식으로 assistant에 하나씩 집어넣는 게 맞나?
-            fmsgs.append({"role": "assistant", "content": questions[idx]})
+            fmsgs.append({"role": "user", "content": questions[idx]})
             fmsgs.append({"role": "assistant", "content": answers[idx]})
 
         return fmsgs
 
 
     # system instruction 만들고
-    system_instruction = f"assistant는 user와 gpt의 이전 대화 내역이 주어진다. assistant는 user의 질문에 대한 답변을 출력한다."
+    system_instruction = f"assistant는 user와 assistant의 이전 대화 기록을 토대로 user의 말에 대답한다."
 
     # messages를만들고
     fewshot_messages = build_fewshot(questions=pre_user_messages, answers=pre_gpt_messages)
@@ -77,10 +84,9 @@ class State(pc.State):
     def output(self) -> str:
         if not self.text.strip():
             return "result"
-        # translated = translate_text_using_chatgpt(
-        #     self.text, src_lang=self.src_lang, trg_lang=self.trg_lang)
+
         translated = answer_question_using_chatgpt(self.text)
-        # self.messages +=
+
         self.last_answer = translated
         return translated
 
@@ -188,21 +194,7 @@ def index():
     return pc.container(
         header(),
 
-        # pc.select(
-        #     list(parallel_example.keys()),
-        #     value=State.src_lang,
-        #     placeholder="Select a language",
-        #     on_change=State.set_src_lang,
-        #     margin_top="1rem",
-        # ),
-        # pc.select(
-        #     list(parallel_example.keys()),
-        #     value=State.trg_lang,
-        #     placeholder="Select a language",
-        #     on_change=State.set_trg_lang,
-        #     margin_top="1rem",
-        # ),
-        # output(),
+
         pc.hstack(
             pc.input(
                 placeholder="Text to translate",
@@ -212,13 +204,6 @@ def index():
             ),
             pc.button("Send", on_click=State.post, margin_top="1rem"),
         ),
-        # pc.input(
-        #     placeholder="Text to translate",
-        #     on_blur=State.set_text,
-        #     margin_top="1rem",
-        #     border_color="#eaeaef"
-        # ),
-        # pc.button("Post", on_click=State.post, margin_top="1rem"),
         pc.vstack(
             pc.foreach(State.messages, message),
             margin_top="2rem",
