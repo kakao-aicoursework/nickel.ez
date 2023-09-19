@@ -44,6 +44,9 @@ class ChatBot:
         self.llm = llm
         self.document = project_data
 
+    # 이런 식으로 하나의 chain만 구성해서 질의응답을 하는 것이 요구사항에 부합한지 잘 모르겠습니다.
+    # 좀 더 정교한 추론 혹은 가이드를 위해서는 여러 개의 chaining을 해주지 않아도 원하는 퀄리티의 대답을 얻을 수 있을까요?
+    # 또 이런 다큐먼트 기반의 챗봇을 구성하는 경우 퀄리티를 높히는 방법은 무엇이 있는지 궁금합니다.
     def get_chain(self) -> str:
 
         system_message = f"assistant는 다음 가이드를 토대로 user의 질문에 적절히 질의응답한다. \n {self.document}"
