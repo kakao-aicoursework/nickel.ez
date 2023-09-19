@@ -9,6 +9,17 @@ from pynecone.base import Base
 
 # from app_name.sssecret import secret_gpt_key
 
+from langchain import LLMChain
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.schema import SystemMessage
+
+from langchain.utilities import DuckDuckGoSearchAPIWrapper
+import tiktoken
+
 import os
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
@@ -24,6 +35,34 @@ def load_data(path: str) -> str:
         return f.read()
 
 # print(load_data("./datas/project_data.txt"))
+
+project_data = load_data("./datas/project_data.txt")
+
+class ChatBot:
+    chain = None
+    def __init__(self, llm):
+        self.llm = llm
+        self.document = project_data
+
+    def get_chain(self) -> str:
+
+        system_message = f"assistant는 다음 가이드를 토대로 user의 질문에 적절히 질의응답한다. \n {self.document}"
+        system_message_prompt = SystemMessage(content=system_message)
+
+        human_template = "질문: {question}"
+        human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+
+        chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+
+        chain = LLMChain(llm=self.llm, prompt=chat_prompt)
+
+        self.chain = chain
+
+        return chain
+
+
+cb = ChatBot(ChatOpenAI(temperature=0.0, max_tokens=1024, model="gpt-3.5-turbo-16k"))
+
 
 def answer_question_using_chatgpt(question) -> str:
 #fewshow?
@@ -94,7 +133,8 @@ class State(pc.State):
         self.messages = [
             Message(
                 original_text=self.text,
-                text=self.output,
+                #text=self.output,
+                text = cb.get_chain().run(self.text),
                 created_at=datetime.now().strftime("%B %d, %Y %I:%M %p"),
                 # to_lang=self.trg_lang,
             )
