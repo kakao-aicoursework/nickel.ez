@@ -25,8 +25,6 @@ import os
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
-pre_user_messages = []
-pre_gpt_messages = []
 
 
 def load_data(path: str) -> str:
@@ -66,45 +64,6 @@ class ChatBot:
 
 cb = ChatBot(ChatOpenAI(temperature=0.0, max_tokens=1024, model="gpt-3.5-turbo-16k"))
 
-
-def answer_question_using_chatgpt(question) -> str:
-#fewshow?
-    print("making answer")
-    def build_fewshot(questions, answers):
-        fmsgs = []
-        print("build")
-        for idx in  range(len(questions)):
-            # 이런 식으로 assistant에 하나씩 집어넣는 게 맞나?
-            fmsgs.append({"role": "user", "content": questions[idx]})
-            fmsgs.append({"role": "assistant", "content": answers[idx]})
-
-        return fmsgs
-
-
-    # system instruction 만들고
-    system_instruction = f"assistant는 user와 assistant의 이전 대화 기록을 토대로 user의 말에 대답한다."
-
-    # messages를만들고
-    fewshot_messages = build_fewshot(questions=pre_user_messages, answers=pre_gpt_messages)
-
-    messages = [
-        {"role": "system", "content": system_instruction},
-        *fewshot_messages,
-        {"role": "user", "content": question}
-    ]
-
-    # API 호출
-    response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
-                                        messages=messages)
-    answered_text = response['choices'][0]['message']['content']
-
-    # 정보 저장
-    pre_user_messages.append(question)
-    pre_gpt_messages.append(answered_text)
-
-    # Return
-    return answered_text
-
 class Message(Base):
     original_text: str
     text: str
@@ -122,15 +81,7 @@ class State(pc.State):
 
     last_answer =""
 
-    @pc.var
-    def output(self) -> str:
-        if not self.text.strip():
-            return "result"
 
-        translated = answer_question_using_chatgpt(self.text)
-
-        self.last_answer = translated
-        return translated
 
     def post(self):
         self.messages = [
