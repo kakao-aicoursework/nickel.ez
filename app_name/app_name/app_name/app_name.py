@@ -17,9 +17,7 @@ from langchain.prompts.chat import (
 )
 from langchain.schema import SystemMessage
 
-from langchain.utilities import DuckDuckGoSearchAPIWrapper
-import tiktoken
-
+from .bot_util.db import VectorDB
 import os
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
@@ -80,7 +78,7 @@ class State(pc.State):
     trg_lang: str = "영어"
 
     last_answer =""
-
+    _db=None
 
 
     def post(self):
@@ -88,11 +86,23 @@ class State(pc.State):
             Message(
                 original_text=self.text,
                 #text=self.output,
-                text = cb.get_chain().run(self.text),
+                text=cb.get_chain().run(self.text),
                 created_at=datetime.now().strftime("%B %d, %Y %I:%M %p"),
                 # to_lang=self.trg_lang,
             )
         ] + self.messages
+
+    def load(self):
+        if self._db is None:
+            data_src = "./datas"
+            persist_dir = "./chroma-persist"
+            collection_name = "ka-bot"
+            self._db = VectorDB(data_dir=data_src, persist_dir=persist_dir, collection_name=collection_name)
+
+        self._db.load_data()
+
+
+
 
 
 # Define views.
@@ -188,7 +198,7 @@ def index():
     return pc.container(
         header(),
 
-
+        pc.button("load data", on_click=State.load, margin_top="1rem"),
         pc.hstack(
             pc.input(
                 placeholder="Text to translate",
