@@ -1,0 +1,4 @@
+kakao_social: kakao novel API document. kakao_social serves user's profile which is used in kakao talk.
+kakao_sync: kakao sync API document. explanation of the kakao sync apis and how to use them.
+kakao_talk_channel: kakao talk channel API document. explanation of the kakao talk channel apis and how to use them. kakao talk channel is social networking service.
+default: not related with kakao apis.

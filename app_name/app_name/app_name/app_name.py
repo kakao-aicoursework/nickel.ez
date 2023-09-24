@@ -18,11 +18,11 @@ from langchain.prompts.chat import (
 from langchain.schema import SystemMessage
 
 from .bot_util.db import VectorDB
+from .bot_util.langchain import KakaoLangChain
 import os
 
 # openai.api_key = "<YOUR_OPENAI_API_KEY>"
 openai.api_key = os.environ["OPENAI_API_KEY"]
-
 
 
 def load_data(path: str) -> str:
@@ -78,28 +78,36 @@ class State(pc.State):
     trg_lang: str = "영어"
 
     last_answer =""
-    _db=None
+    _db = None
 
+    _lc: KakaoLangChain = None
 
     def post(self):
         self.messages = [
             Message(
                 original_text=self.text,
                 #text=self.output,
-                text=cb.get_chain().run(self.text),
+                # text=cb.get_chain().run(self.text),
+                text=self._lc.gernerate_answer(self.text)['answer'],
                 created_at=datetime.now().strftime("%B %d, %Y %I:%M %p"),
                 # to_lang=self.trg_lang,
             )
         ] + self.messages
 
+        # print(self._db.query(query=self.text))
+        # print(self._lc.gernerate_answer(self.text)['answer'])
+
     def load(self):
-        if self._db is None:
-            data_src = "./datas"
-            persist_dir = "./chroma-persist"
-            collection_name = "ka-bot"
-            self._db = VectorDB(data_dir=data_src, persist_dir=persist_dir, collection_name=collection_name)
+
+        data_src = "./datas"
+        persist_dir = "./chroma-persist"
+        collection_name = "ka-bot"
+        self._db = VectorDB(data_dir=data_src, persist_dir=persist_dir, collection_name=collection_name)
 
         self._db.load_data()
+
+        self._lc = KakaoLangChain(history_dir="./history", db=self._db)
+
 
 
 

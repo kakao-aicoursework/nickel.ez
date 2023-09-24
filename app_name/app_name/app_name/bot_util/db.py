@@ -46,9 +46,9 @@ class VectorDB:
             persist_directory=self.persist_dir,
         )
 
-        if self.db is None:
-            self.db = chroma
-            self._retriever = chroma.as_retriever()
+
+        self.db = chroma
+        self._retriever = chroma.as_retriever()
         print('db success')
 
     def load_data(self):

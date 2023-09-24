@@ -1,0 +1,8 @@
+Your job is to select most appropriate intent from intent_list for the given user_message by User.
+
+<intent_list>
+{intent_list}
+</intent_list>
+
+User: {user_message}
+Intent:
